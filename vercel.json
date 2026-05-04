@@ -1,6 +1,0 @@
-{
-  "installCommand": "cd case-scheduler && npm ci",
-  "buildCommand": "cd case-scheduler && npm run build",
-  "outputDirectory": "case-scheduler/.next",
-  "framework": "nextjs"
-}
