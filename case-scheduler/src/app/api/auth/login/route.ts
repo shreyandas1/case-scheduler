@@ -1,12 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { db } from "~/server/db";
 import { createSession } from "~/server/auth";
 
 export async function POST(request: NextRequest) {
   try {
-    const { username } = await request.json();
+    const body = (await request.json().catch(() => null)) as unknown;
+    const username =
+      body &&
+      typeof body === "object" &&
+      "username" in body &&
+      typeof body.username === "string"
+        ? body.username
+        : null;
 
-    if (!username || typeof username !== "string") {
+    if (!username) {
       return NextResponse.json(
         { message: "Username is required" },
         { status: 400 }
@@ -25,16 +32,14 @@ export async function POST(request: NextRequest) {
       where: { email: username },
     });
 
-    if (!user) {
-      user = await db.user.create({
-        data: {
-          id: `user_${Math.random().toString(36).substring(2, 15)}`,
-          email: username,
-          name: username,
-          emailVerified: true,
-        },
-      });
-    }
+    user ??= await db.user.create({
+      data: {
+        id: `user_${Math.random().toString(36).substring(2, 15)}`,
+        email: username,
+        name: username,
+        emailVerified: true,
+      },
+    });
 
     // Create session
     await createSession(user.id, username);

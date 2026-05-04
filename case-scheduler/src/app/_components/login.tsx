@@ -3,6 +3,19 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+function getErrorMessage(value: unknown) {
+  if (
+    value &&
+    typeof value === "object" &&
+    "message" in value &&
+    typeof value.message === "string"
+  ) {
+    return value.message;
+  }
+
+  return "Login failed";
+}
+
 export function LoginForm() {
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -22,8 +35,8 @@ export function LoginForm() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Login failed");
+        const data: unknown = await response.json();
+        throw new Error(getErrorMessage(data));
       }
 
       router.push("/availability");

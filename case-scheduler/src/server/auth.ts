@@ -9,7 +9,7 @@ export interface Session {
   userId: string;
 }
 
-export async function createSession(userId: string, username: string) {
+export async function createSession(userId: string, _username: string) {
   const sessionId = Math.random().toString(36).substring(2, 15);
   const expiresAt = new Date(Date.now() + SESSION_DURATION);
 
@@ -69,7 +69,9 @@ export async function deleteSession() {
   const sessionId = cookieStore.get(SESSION_COOKIE)?.value;
 
   if (sessionId) {
-    await db.session.delete({ where: { id: sessionId } }).catch(() => {});
+    await db.session.delete({ where: { id: sessionId } }).catch(() => {
+      // The session may already be gone; logout should still clear the cookie.
+    });
     cookieStore.delete(SESSION_COOKIE);
   }
 }

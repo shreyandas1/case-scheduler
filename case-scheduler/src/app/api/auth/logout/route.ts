@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { deleteSession } from "~/server/auth";
 
 export async function POST(request: NextRequest) {
