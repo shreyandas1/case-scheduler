@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const DEFAULT_TIME_ZONE = "America/Los_Angeles";
-export const TIME_ZONE_STORAGE_KEY = "caseSchedulerTimeZone";
+export const TIME_ZONE_STORAGE_KEY = "caseSchedulerTimeZone:v2";
 export const TIME_ZONE_CHANGE_EVENT = "caseSchedulerTimeZoneChange";
 export const TIME_ZONE_OPTIONS = [
   { value: "America/Los_Angeles", label: "PDT/Pacific" },
