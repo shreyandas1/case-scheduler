@@ -1,6 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+import {
+  DEFAULT_TIME_ZONE,
+  getTimeZoneAbbreviation,
+  useStoredTimeZone,
+} from "../_components/timezone-selector";
 
 type SavedSlot = {
   day: string;
@@ -9,20 +15,14 @@ type SavedSlot = {
 };
 
 type SaveState = "idle" | "saving" | "saved" | "error";
+type Toast = {
+  type: "success" | "error";
+  text: string;
+};
 
 const START_HOUR = 0;
 const END_HOUR = 24;
 const DAYS_IN_WEEK = 7;
-const DEFAULT_TIME_ZONE = "America/Los_Angeles";
-const TIME_ZONE_OPTIONS = [
-  { value: "America/Los_Angeles", label: "Pacific" },
-  { value: "America/Denver", label: "Mountain" },
-  { value: "America/Chicago", label: "Central" },
-  { value: "America/New_York", label: "Eastern" },
-  { value: "UTC", label: "UTC" },
-  { value: "Europe/London", label: "London" },
-  { value: "Asia/Kolkata", label: "India" },
-];
 
 function padTime(value: number) {
   return value.toString().padStart(2, "0");
@@ -135,17 +135,6 @@ function getTodayInTimeZone(timeZone: string) {
   return new Date(Date.UTC(year, month - 1, day, 12));
 }
 
-function getTimeZoneAbbreviation(timeZone: string) {
-  return (
-    new Intl.DateTimeFormat(undefined, {
-      timeZone,
-      timeZoneName: "short",
-    })
-      .formatToParts(new Date())
-      .find((part) => part.type === "timeZoneName")?.value ?? timeZone
-  );
-}
-
 function getTimeSlots() {
   const slots: string[] = [];
 
@@ -194,7 +183,7 @@ export function AvailabilityGrid({
 }: {
   savedSlots: SavedSlot[];
 }) {
-  const [timeZone, setTimeZone] = useState(DEFAULT_TIME_ZONE);
+  const [timeZone] = useStoredTimeZone();
   const [weekOffset, setWeekOffset] = useState(0);
   const days = useMemo(
     () => {
@@ -240,8 +229,21 @@ export function AvailabilityGrid({
   const [paintMode, setPaintMode] = useState<boolean | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [message, setMessage] = useState("");
+  const [toast, setToast] = useState<Toast | null>(null);
 
   const selectedCount = selectedSlots.size;
+
+  useEffect(() => {
+    if (!toast) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setToast(null);
+    }, 3200);
+
+    return () => window.clearTimeout(timeout);
+  }, [toast]);
 
   function setSlot(slotKey: string, shouldSelect: boolean) {
     setSelectedSlots((current) => {
@@ -312,17 +314,32 @@ export function AvailabilityGrid({
       }
 
       setSaveState("saved");
-      setMessage(
-        `Saved ${slots.length} time slot${slots.length === 1 ? "" : "s"} in ${timeZoneAbbreviation}.`,
-      );
+      const saveMessage = `Saved ${slots.length} time slot${slots.length === 1 ? "" : "s"} in ${timeZoneAbbreviation}.`;
+      setMessage(saveMessage);
+      setToast({ type: "success", text: saveMessage });
     } catch {
+      const errorMessage = "Could not save availability. Please try again.";
       setSaveState("error");
-      setMessage("Could not save availability. Please try again.");
+      setMessage(errorMessage);
+      setToast({ type: "error", text: errorMessage });
     }
   }
 
   return (
     <section className="w-full max-w-7xl min-w-0">
+      {toast ? (
+        <div className="fixed right-4 top-4 z-50 max-w-sm" role="status">
+          <div
+            className={`rounded-lg border px-4 py-3 text-sm font-medium shadow-2xl shadow-black/30 ${
+              toast.type === "success"
+                ? "border-emerald-300/40 bg-emerald-500 text-slate-950"
+                : "border-rose-300/40 bg-rose-500 text-white"
+            }`}
+          >
+            {toast.text}
+          </div>
+        </div>
+      ) : null}
       <div className="mb-4 flex flex-col gap-3 text-white lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h2 className="text-3xl font-bold">Your Availability</h2>
@@ -332,24 +349,7 @@ export function AvailabilityGrid({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-2 text-sm text-gray-300">
-            <span>Timezone</span>
-            <select
-              value={timeZone}
-              onChange={(event) => {
-                setTimeZone(event.target.value);
-                setSaveState("idle");
-                setMessage("");
-              }}
-              className="rounded-md border border-white/15 bg-slate-950 px-3 py-2 text-sm font-medium text-white outline-none transition hover:border-white/30 focus:border-emerald-300"
-            >
-              {TIME_ZONE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
+        
           <div className="flex items-center overflow-hidden rounded-md border border-white/15 bg-slate-950">
             <button
               type="button"
