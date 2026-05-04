@@ -27,11 +27,14 @@ export function LoginForm() {
     setError(null);
     setIsLoading(true);
 
+    // Normalize username on client side for immediate feedback
+    const normalizedUsername = username.trim().toLowerCase();
+
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username }),
+        body: JSON.stringify({ username: normalizedUsername }),
       });
 
       if (!response.ok) {
