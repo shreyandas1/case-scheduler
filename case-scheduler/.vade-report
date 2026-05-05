@@ -1,0 +1,61 @@
+# Vercel Speed Insights Installation Report
+
+## Summary
+Successfully installed and configured Vercel Speed Insights for the case-scheduler Next.js project.
+
+## Changes Made
+
+### 1. Package Installation
+- **Package**: `@vercel/speed-insights` v2.0.0
+- **Method**: Installed via npm as specified by the project's package manager
+- **Files Modified**:
+  - `package.json` - Added @vercel/speed-insights to dependencies
+  - `package-lock.json` - Updated lockfile with new dependency tree
+
+### 2. Speed Insights Integration
+- **File Modified**: `src/app/layout.tsx`
+- **Changes**:
+  - Added import: `import { SpeedInsights } from "@vercel/speed-insights/next";`
+  - Added `<SpeedInsights />` component at the end of the `<body>` tag
+
+## Implementation Details
+
+This project uses **Next.js 15.2.3 with the App Router**, so I followed the official Vercel documentation for Next.js 13.5+ applications:
+
+1. Fetched the latest installation instructions from: https://vercel.com/docs/speed-insights/quickstart
+2. Installed the `@vercel/speed-insights` package using npm
+3. Added the SpeedInsights component to the root layout file (`src/app/layout.tsx`)
+4. Placed the component inside the `<body>` tag after existing content, following Next.js best practices
+
+The SpeedInsights component is now globally available across all pages of the application.
+
+## Code Structure
+The implementation preserves the existing code structure:
+- Maintained all existing imports and their order
+- Placed SpeedInsights component at the end of the body section
+- No changes to existing functionality or components
+- Follows the project's TypeScript and formatting conventions
+
+## Verification
+
+✅ **TypeScript Compilation**: Passed - no type errors
+✅ **Code Formatting**: Passed - layout.tsx follows Prettier conventions
+✅ **Package Installation**: Successful - @vercel/speed-insights@2.0.0 installed
+✅ **Lockfile Updated**: package-lock.json properly updated
+
+## Notes
+
+- The Speed Insights component will automatically collect Web Vitals data when the application is deployed to Vercel
+- No additional configuration is required for basic functionality
+- The component is lightweight and will not impact page load performance
+- To view metrics, enable Speed Insights in the Vercel project dashboard after deployment
+
+## Next Steps
+
+To see Speed Insights data:
+1. Deploy the application to Vercel
+2. Enable Speed Insights in the Vercel dashboard for this project
+3. Visit the deployed site to generate traffic
+4. View real-time performance metrics in the Speed Insights dashboard
+
+The installation is complete and ready for deployment.
