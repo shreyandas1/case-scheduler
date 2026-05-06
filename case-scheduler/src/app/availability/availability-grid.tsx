@@ -185,6 +185,7 @@ export function AvailabilityGrid({
 }) {
   const [timeZone] = useStoredTimeZone();
   const [weekOffset, setWeekOffset] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
   const days = useMemo(
     () => {
       const today = getTodayInTimeZone(timeZone);
@@ -219,6 +220,14 @@ export function AvailabilityGrid({
   );
   const visibleWeekLabel = days[0]?.week ?? "";
   const timeSlots = useMemo(() => getTimeSlots(), []);
+  const displayDays = useMemo(
+    () => (isMobile ? days.slice(0, 5) : days),
+    [days, isMobile],
+  );
+  const displayTimeSlots = useMemo(
+    () => (isMobile ? timeSlots : timeSlots),
+    [timeSlots, isMobile],
+  );
   const timeZoneAbbreviation = useMemo(
     () => getTimeZoneAbbreviation(timeZone),
     [timeZone],
@@ -227,11 +236,23 @@ export function AvailabilityGrid({
     getInitialSelection(savedSlots),
   );
   const [paintMode, setPaintMode] = useState<boolean | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [activePointerId, setActivePointerId] = useState<number | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [message, setMessage] = useState("");
   const [toast, setToast] = useState<Toast | null>(null);
 
   const selectedCount = selectedSlots.size;
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 768px)");
+    const updateIsMobile = () => setIsMobile(mediaQuery.matches);
+
+    updateIsMobile();
+    mediaQuery.addEventListener("change", updateIsMobile);
+
+    return () => mediaQuery.removeEventListener("change", updateIsMobile);
+  }, []);
 
   useEffect(() => {
     if (!toast) {
@@ -245,10 +266,18 @@ export function AvailabilityGrid({
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
-  function setSlot(slotKey: string, shouldSelect: boolean) {
+  function setSlot(
+    slotKey: string,
+    shouldSelect: boolean,
+    clearSaveState = false,
+  ) {
     setSelectedSlots((current) => {
-      const next = new Set(current);
+      const alreadySelected = current.has(slotKey);
+      if (shouldSelect === alreadySelected) {
+        return current;
+      }
 
+      const next = new Set(current);
       if (shouldSelect) {
         next.add(slotKey);
       } else {
@@ -257,23 +286,57 @@ export function AvailabilityGrid({
 
       return next;
     });
-    setSaveState("idle");
-    setMessage("");
+
+    if (clearSaveState) {
+      setSaveState("idle");
+      setMessage("");
+    }
   }
 
-  function handlePointerDown(slotKey: string) {
+  function handlePointerDown(
+    event: React.PointerEvent<HTMLButtonElement>,
+    slotKey: string,
+  ) {
+    event.preventDefault();
     const shouldSelect = !selectedSlots.has(slotKey);
     setPaintMode(shouldSelect);
-    setSlot(slotKey, shouldSelect);
+    setIsDragging(true);
+    setActivePointerId(event.pointerId);
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setSlot(slotKey, shouldSelect, true);
   }
 
   function handlePointerEnter(slotKey: string) {
-    if (paintMode === null) {
+    if (paintMode === null || !isDragging) {
       return;
     }
 
     setSlot(slotKey, paintMode);
   }
+
+  function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (paintMode === null || !isDragging || activePointerId !== e.pointerId) {
+      return;
+    }
+
+    const element = document.elementFromPoint(e.clientX, e.clientY);
+    if (!element) return;
+
+    const button = element.closest("button[data-slot-key]");
+    if (!button) return;
+
+    const slotKey = button.getAttribute("data-slot-key");
+    if (slotKey) {
+      setSlot(slotKey, paintMode);
+    }
+  }
+
+  function handlePointerUp() {
+    setPaintMode(null);
+    setIsDragging(false);
+    setActivePointerId(null);
+  }
+
 
   async function handleSubmit() {
     const slots = Array.from(selectedSlots)
@@ -394,42 +457,43 @@ export function AvailabilityGrid({
       </div>
 
       <div
-        className="max-w-full overflow-x-auto rounded-lg border border-white/15 bg-slate-950/40 shadow-2xl shadow-black/25"
+        className="max-w-full max-h-[calc(100vh-250px)] overflow-x-auto overflow-y-auto rounded-lg border border-white/15 bg-slate-950/40 shadow-2xl shadow-black/25 touch-none"
         onPointerLeave={() => setPaintMode(null)}
-        onPointerUp={() => setPaintMode(null)}
-        onPointerCancel={() => setPaintMode(null)}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        onPointerMove={handlePointerMove}
       >
-        <table className="w-full min-w-[720px] table-fixed select-none border-separate border-spacing-0">
+        <table className="w-full min-w-0 md:min-w-[720px] table-fixed select-none border-separate border-spacing-0 h-full">
           <colgroup>
-            <col className="w-24" />
-            {days.map((day) => (
-              <col key={day.key} className="w-[104px]" />
+            <col className="w-16 md:w-24" />
+            {displayDays.map((day) => (
+              <col key={day.key} className="w-[80px] md:w-[104px]" />
             ))}
           </colgroup>
           <thead>
             <tr>
               <th
                 scope="col"
-                className="sticky left-0 z-20 h-16 border-b border-r border-white/15 bg-slate-950/95 px-3 text-left text-xs font-semibold uppercase text-gray-300"
+                className="sticky left-0 z-20 h-8 md:h-12 border-b border-r border-white/15 bg-slate-950/95 px-2 md:px-3 text-left text-[10px] md:text-xs font-semibold uppercase text-gray-300"
               >
                 Time
               </th>
-              {days.map((day) => (
+              {displayDays.map((day) => (
                 <th
                   key={day.key}
                   scope="col"
-                  className="h-16 border-b border-r border-white/10 bg-slate-950/80 px-2 text-center"
+                  className="h-12 md:h-16 border-b border-r border-white/10 bg-slate-950/80 px-1 md:px-2 text-center"
                 >
-                  <div className="flex h-full flex-col items-center justify-center">
+                  <div className="flex h-full flex-col items-center justify-center gap-0.5">
                     {day.isWeekStart ? (
-                      <div className="text-[10px] font-semibold uppercase text-emerald-300">
+                      <div className="text-[9px] font-semibold uppercase text-emerald-300">
                         Week of {day.week}
                       </div>
                     ) : null}
-                    <div className="text-sm font-semibold text-white">
+                    <div className="text-[10px] md:text-sm font-semibold text-white">
                       {day.weekday}
                     </div>
-                    <div className="text-xs font-medium text-gray-300">
+                    <div className="text-[9px] md:text-xs font-medium text-gray-300">
                       {day.label}
                     </div>
                   </div>
@@ -438,15 +502,15 @@ export function AvailabilityGrid({
             </tr>
           </thead>
           <tbody>
-            {timeSlots.map((slot) => (
-              <tr key={slot} className="h-10">
+            {displayTimeSlots.map((slot) => (
+              <tr key={slot} className="h-7 md:h-9">
                 <th
                   scope="row"
-                  className="sticky left-0 z-10 h-10 border-b border-r border-white/15 bg-slate-950/95 px-2 text-center text-xs font-medium text-gray-300"
+                  className="sticky left-0 z-10 h-7 md:h-9 border-b border-r border-white/15 bg-slate-950/95 px-1 md:px-2 text-center text-[10px] md:text-xs font-medium text-gray-300"
                 >
                   {getDisplayTime(slot)}
                 </th>
-                {days.map((day) => {
+                {displayDays.map((day) => {
                   const key = getPacificSlotKey(day.key, slot, timeZone);
                   const isSelected = selectedSlots.has(key);
 
@@ -457,11 +521,12 @@ export function AvailabilityGrid({
                     >
                       <button
                         type="button"
+                        data-slot-key={key}
                         aria-pressed={isSelected}
                         aria-label={`${day.weekday} ${day.label} at ${getDisplayTime(slot)} ${timeZoneAbbreviation}`}
-                        onPointerDown={() => handlePointerDown(key)}
+                        onPointerDown={(e) => handlePointerDown(e, key)}
                         onPointerEnter={() => handlePointerEnter(key)}
-                        className={`block h-full min-h-10 w-full transition focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-200 ${
+                        className={`block h-full min-h-10 w-full touch-none transition focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-200 ${
                           isSelected
                             ? "bg-emerald-400 hover:bg-emerald-300"
                             : "bg-white/[0.03] hover:bg-cyan-400/40"
