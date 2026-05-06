@@ -40,12 +40,12 @@ export function LoginForm() {
         } else {
           setUsernameFetchError("Could not load existing usernames");
         }
-      } catch (err) {
+      } catch {
         setUsernameFetchError("Failed to fetch usernames");
       }
     };
 
-    fetchUsernames();
+    void fetchUsernames();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -87,7 +87,7 @@ export function LoginForm() {
               onChange={() => {
                 setUseExisting(true);
                 if (existingUsernames.length > 0) {
-                  setUsername(existingUsernames[0]);
+                  setUsername(existingUsernames[0] ?? "");
                 }
                 setError(null);
               }}
