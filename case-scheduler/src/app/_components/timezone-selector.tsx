@@ -13,6 +13,10 @@ export const TIME_ZONE_OPTIONS = [
   { value: "UTC", label: "UTC" },
   { value: "Europe/London", label: "London" },
   { value: "Asia/Kolkata", label: "India" },
+  { value: "Africa/Lagos", label: "West Central Africa" },
+  { value: "Asia/Taipei", label: "Taipei" },
+  { value: "Asia/Dubai", label: "Abu Dhabi" },
+
 ] as const;
 
 export function isSupportedTimeZone(value: string) {
