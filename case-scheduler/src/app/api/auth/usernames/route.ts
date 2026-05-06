@@ -12,14 +12,14 @@ export async function GET() {
       },
     });
 
-    const usernames = users.map((user) => user.email);
+    const usernames = users.map((user) => user.email).filter((email): email is string => Boolean(email));
 
-    return NextResponse.json({ usernames }, { status: 200 });
+    return NextResponse.json({ usernames });
   } catch (error) {
     console.error("Error fetching usernames:", error);
     return NextResponse.json(
-      { message: "Failed to fetch usernames" },
-      { status: 500 }
+      { usernames: [] },
+      { status: 200 }
     );
   }
 }

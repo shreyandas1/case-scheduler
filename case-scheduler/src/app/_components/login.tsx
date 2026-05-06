@@ -29,19 +29,21 @@ export function LoginForm() {
     const fetchUsernames = async () => {
       try {
         const response = await fetch("/api/auth/usernames");
-        if (response.ok) {
-          const data = await response.json() as { usernames?: string[] };
-          if (data.usernames && Array.isArray(data.usernames)) {
-            setExistingUsernames(data.usernames);
-            if (data.usernames.length > 0) {
-              setUsername(data.usernames[0] ?? "");
-            }
-          }
-        } else {
+        if (!response.ok) {
           setUsernameFetchError("Could not load existing usernames");
+          return;
         }
-      } catch {
-        setUsernameFetchError("Failed to fetch usernames");
+        
+        const data = await response.json() as { usernames?: string[] };
+        if (data.usernames && Array.isArray(data.usernames)) {
+          setExistingUsernames(data.usernames);
+          if (data.usernames.length > 0) {
+            setUsername(data.usernames[0] ?? "");
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching usernames:", error);
+        setUsernameFetchError("Could not load existing usernames");
       }
     };
 
